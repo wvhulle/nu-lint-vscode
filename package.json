@@ -1,8 +1,8 @@
 {
   "name": "nu-lint",
   "displayName": "Nu-Lint",
-  "description": "Nushell linting support with nu-lint",
-  "version": "0.0.2",
+  "description": "Helpful linter for the Nu scripting language",
+  "version": "0.0.7",
   "publisher": "WillemVanhulle",
   "engines": {
     "vscode": "^1.74.0"
@@ -19,23 +19,12 @@
     "shell"
   ],
   "activationEvents": [
-    "onLanguage:nu"
+    "onLanguage:nu",
+    "onLanguage:nushell",
+    "workspaceContains:*.nu"
   ],
   "main": "./out/extension.js",
   "contributes": {
-    "languages": [
-      {
-        "id": "nushell",
-        "aliases": [
-          "Nushell",
-          "nu"
-        ],
-        "extensions": [
-          ".nu"
-        ],
-        "configuration": "./language-configuration.json"
-      }
-    ],
     "configuration": {
       "type": "object",
       "title": "Nu-Lint",
@@ -82,22 +71,38 @@
         "command": "nu-lint.lintWorkspace",
         "title": "Lint Workspace",
         "category": "Nu-Lint"
+      },
+      {
+        "command": "nu-lint.showLogs",
+        "title": "Show Logs",
+        "category": "Nu-Lint"
       }
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "pnpm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
     "test-offsets": "node tests/offset-validation.js",
     "test-workspace": "node tests/workspace-root-test.js"
   },
   "devDependencies": {
     "@types/node": "16.x",
     "@types/vscode": "^1.74.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
     "@vscode/vsce": "^3.7.0",
+    "eslint": "^8.0.0",
     "typescript": "^4.9.4"
   },
+  "extensionDependencies": [
+    "TheNuProjectContributors.vscode-nushell-lang"
+  ],
+  "extensionPack": [
+    "constneo.vscode-nushell-format"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/wvhulle/nu-lint-vscode.git"

@@ -1,19 +1,19 @@
 import * as vscode from 'vscode';
-import { NuLinter } from './nuLinter';
-import { NuLintCodeActionProvider } from './codeActionProvider';
+import { NuLinter } from './linter';
+import { NuLintCodeActionProvider } from './code-actions';
 
-let linter: NuLinter;
-let codeActionProvider: NuLintCodeActionProvider;
+let linter: NuLinter | undefined;
+let codeActionProvider: NuLintCodeActionProvider | undefined;
 
-export function activate(context: vscode.ExtensionContext) {
-    console.log('Nu-Lint extension is now active!');
-    vscode.window.showInformationMessage('Nu-Lint extension activated!');
+export function activate(context: vscode.ExtensionContext): void {
+    const logger = vscode.window.createOutputChannel('Nu-Lint', { log: true });
+    context.subscriptions.push(logger);
+    logger.info('Nu-Lint extension is now active!');
 
     codeActionProvider = new NuLintCodeActionProvider();
-    linter = new NuLinter(codeActionProvider);
+    linter = new NuLinter(codeActionProvider, logger);
     context.subscriptions.push(linter);
 
-    // Register code action provider for Nushell files
     context.subscriptions.push(
         vscode.languages.registerCodeActionsProvider(
             { language: 'nushell' },
@@ -34,28 +34,32 @@ export function activate(context: vscode.ExtensionContext) {
         )
     );
 
-    // Debug: Log when documents are opened
-    vscode.workspace.onDidOpenTextDocument(document => {
-        console.log(`Document opened: ${document.fileName}, language: ${document.languageId}`);
-    });
-
     const lintFileCommand = vscode.commands.registerCommand('nu-lint.lintFile', () => {
         const activeEditor = vscode.window.activeTextEditor;
-        if (activeEditor && (activeEditor.document.languageId === 'nushell' || activeEditor.document.languageId === 'nu')) {
-            linter.lintDocument(activeEditor.document);
+        if (activeEditor !== undefined && (activeEditor.document.languageId === 'nushell' || activeEditor.document.languageId === 'nu')) {
+            void linter?.lintDocument(activeEditor.document).catch((error: unknown) => {
+                void vscode.window.showErrorMessage(`Lint failed: ${String(error)}`);
+            });
         }
     });
 
     const lintWorkspaceCommand = vscode.commands.registerCommand('nu-lint.lintWorkspace', () => {
-        linter.lintWorkspace();
+        void linter?.lintWorkspace().catch((error: unknown) => {
+            void vscode.window.showErrorMessage(`Workspace lint failed: ${String(error)}`);
+        });
+    });
+
+    const showLogsCommand = vscode.commands.registerCommand('nu-lint.showLogs', () => {
+        logger.show();
     });
 
     context.subscriptions.push(lintFileCommand);
     context.subscriptions.push(lintWorkspaceCommand);
+    context.subscriptions.push(showLogsCommand);
 }
 
-export function deactivate() {
-    if (linter) {
+export function deactivate(): void {
+    if (linter !== undefined) {
         linter.dispose();
     }
 }

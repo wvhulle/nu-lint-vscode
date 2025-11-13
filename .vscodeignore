@@ -12,3 +12,17 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 package-lock.json
+pnpm-lock.yaml
+result/**
+result
+*.vsix
+.DS_Store
+shell.nix
+core.claude.*
+CONTRIBUTING.md
+.envrc
+.direnv/**
+.claude/**
+out/test/**
+.direnv/
+.claude/
