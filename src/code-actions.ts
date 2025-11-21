@@ -1,32 +1,19 @@
 import * as vscode from 'vscode';
-
-interface NuLintViolation {
-    rule_id: string;
-    severity: 'error' | 'warning' | 'info';
-    message: string;
-    file: string;
-    line_start: number;
-    line_end: number;
-    column_start: number;
-    column_end: number;
-    offset_start: number;
-    offset_end: number;
-    suggestion?: string;
-    fix?: {
-        description: string;
-        replacements: {
-            offset_start: number;
-            offset_end: number;
-            new_text: string;
-        }[];
-    } | null;
-}
+import { LegacyNuLintViolation } from './legacy';
+import { VSCodeDiagnosticData } from './parsing';
 
 export class NuLintCodeActionProvider implements vscode.CodeActionProvider {
-    private readonly violations: Map<string, NuLintViolation[]> = new Map();
+    private readonly legacyViolations: Map<string, LegacyNuLintViolation[]> = new Map();
+    private readonly vscodeData: Map<string, VSCodeDiagnosticData[]> = new Map();
 
-    public updateViolations(uri: vscode.Uri, violations: NuLintViolation[]): void {
-        this.violations.set(uri.toString(), violations);
+    public updateViolations(uri: vscode.Uri, violations: LegacyNuLintViolation[]): void {
+        this.legacyViolations.set(uri.toString(), violations);
+        this.vscodeData.delete(uri.toString());
+    }
+
+    public updateVSCodeDiagnostics(uri: vscode.Uri, diagnostics: VSCodeDiagnosticData[]): void {
+        this.vscodeData.set(uri.toString(), diagnostics);
+        this.legacyViolations.delete(uri.toString());
     }
 
     public provideCodeActions(
@@ -36,14 +23,42 @@ export class NuLintCodeActionProvider implements vscode.CodeActionProvider {
         _token: vscode.CancellationToken
     ): vscode.ProviderResult<vscode.CodeAction[]> {
         const actions: vscode.CodeAction[] = [];
-        const fileViolations = this.violations.get(document.uri.toString()) ?? [];
+        const uriString = document.uri.toString();
+
+        const vscodeDataList = this.vscodeData.get(uriString);
+        if (vscodeDataList !== undefined) {
+            return this.provideActionsFromVSCodeData(document, range, context, vscodeDataList);
+        }
+
+        const legacyViolations = this.legacyViolations.get(uriString) ?? [];
+        for (const diagnostic of context.diagnostics) {
+            if (diagnostic.source === 'nu-lint') {
+                const violation = this.findMatchingViolation(diagnostic, range, legacyViolations);
+
+                if (violation?.fix !== null && violation?.fix !== undefined) {
+                    const action = this.createLegacyFixAction(violation, document, diagnostic);
+                    actions.push(action);
+                }
+            }
+        }
+
+        return actions;
+    }
+
+    private provideActionsFromVSCodeData(
+        document: vscode.TextDocument,
+        range: vscode.Range,
+        context: vscode.CodeActionContext,
+        vscodeDataList: VSCodeDiagnosticData[]
+    ): vscode.CodeAction[] {
+        const actions: vscode.CodeAction[] = [];
 
         for (const diagnostic of context.diagnostics) {
             if (diagnostic.source === 'nu-lint') {
-                const violation = this.findMatchingViolation(diagnostic, range, fileViolations);
+                const matchingData = this.findMatchingVSCodeData(diagnostic, range, vscodeDataList);
 
-                if (violation?.fix !== null && violation?.fix !== undefined) {
-                    const action = this.createFixAction(violation, document, diagnostic);
+                if (matchingData?.code_action !== undefined) {
+                    const action = this.createVSCodeFixAction(matchingData, document.uri);
                     actions.push(action);
                 }
             }
@@ -55,8 +70,8 @@ export class NuLintCodeActionProvider implements vscode.CodeActionProvider {
     private findMatchingViolation(
         diagnostic: vscode.Diagnostic,
         range: vscode.Range,
-        fileViolations: NuLintViolation[]
-    ): NuLintViolation | undefined {
+        fileViolations: LegacyNuLintViolation[]
+    ): LegacyNuLintViolation | undefined {
         return fileViolations.find(v => {
             if (v.rule_id !== diagnostic.code) {
                 return false;
@@ -72,8 +87,36 @@ export class NuLintCodeActionProvider implements vscode.CodeActionProvider {
         });
     }
 
-    private createFixAction(
-        violation: NuLintViolation,
+    private createVSCodeFixAction(
+        data: VSCodeDiagnosticData,
+        uri: vscode.Uri
+    ): vscode.CodeAction {
+        const codeActionData = data.code_action;
+        if (codeActionData === undefined) {
+            throw new Error('Code action is required');
+        }
+
+        const action = new vscode.CodeAction(
+            `Fix: ${codeActionData.title}`,
+            vscode.CodeActionKind.QuickFix
+        );
+
+        action.edit = new vscode.WorkspaceEdit();
+
+        for (const edit of codeActionData.edits) {
+            const replaceRange = new vscode.Range(
+                new vscode.Position(edit.range.start.line, edit.range.start.character),
+                new vscode.Position(edit.range.end.line, edit.range.end.character)
+            );
+
+            action.edit.replace(uri, replaceRange, edit.replacement_text);
+        }
+
+        return action;
+    }
+
+    private createLegacyFixAction(
+        violation: LegacyNuLintViolation,
         document: vscode.TextDocument,
         diagnostic: vscode.Diagnostic
     ): vscode.CodeAction {
@@ -99,6 +142,26 @@ export class NuLintCodeActionProvider implements vscode.CodeActionProvider {
 
         action.diagnostics = [diagnostic];
         return action;
+    }
+
+    private findMatchingVSCodeData(
+        diagnostic: vscode.Diagnostic,
+        range: vscode.Range,
+        vscodeDataList: VSCodeDiagnosticData[]
+    ): VSCodeDiagnosticData | undefined {
+        return vscodeDataList.find(data => {
+            if (data.code !== diagnostic.code) {
+                return false;
+            }
+
+            const dataRange = new vscode.Range(
+                new vscode.Position(data.range.start.line, data.range.start.character),
+                new vscode.Position(data.range.end.line, data.range.end.character)
+            );
+
+            return this.rangesEqual(diagnostic.range, dataRange) &&
+                   this.rangesOverlap(diagnostic.range, range);
+        });
     }
 
     private rangesOverlap(range1: vscode.Range, range2: vscode.Range): boolean {
