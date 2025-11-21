@@ -4,3 +4,7 @@ node_modules
 *.vsix
 .DS_Store
 result
+
+# Prevent accidental JS compilation in src
+src/**/*.js
+src/**/*.js.map

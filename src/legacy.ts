@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as cp from 'child_process';
 import { getConfig } from './config';
+import { resolveViolationPath, createLegacyDiagnostic } from './diagnostic-utils';
 
 export interface LegacyNuLintViolation {
     rule_id: string;
@@ -44,49 +45,6 @@ export function parseNuLintJsonOutput(stdout: string): LegacyNuLintViolation[] {
     return output.violations ?? [];
 }
 
-export function mapSeverityToVSCode(severity: string): vscode.DiagnosticSeverity {
-    switch (severity) {
-        case 'error':
-            return vscode.DiagnosticSeverity.Error;
-        case 'warning':
-            return vscode.DiagnosticSeverity.Warning;
-        case 'info':
-            return vscode.DiagnosticSeverity.Information;
-        default:
-            return vscode.DiagnosticSeverity.Warning;
-    }
-}
-
-export function resolveViolationPath(violationFile: string, workspaceRoot: string | undefined): string {
-    return path.isAbsolute(violationFile) ? violationFile : path.join(workspaceRoot ?? '', violationFile);
-}
-
-export function createLegacyDiagnostic(violation: LegacyNuLintViolation, fileUri: vscode.Uri): vscode.Diagnostic {
-    const range = new vscode.Range(
-        new vscode.Position(violation.line_start - 1, violation.column_start - 1),
-        new vscode.Position(violation.line_end - 1, violation.column_end - 1)
-    );
-
-    const diagnostic = new vscode.Diagnostic(
-        range,
-        `${violation.message} (${violation.rule_id})`,
-        mapSeverityToVSCode(violation.severity)
-    );
-    diagnostic.source = 'nu-lint';
-    diagnostic.code = violation.rule_id;
-
-    if (violation.suggestion !== undefined) {
-        diagnostic.relatedInformation = [
-            new vscode.DiagnosticRelatedInformation(
-                new vscode.Location(fileUri, range),
-                violation.suggestion
-            )
-        ];
-    }
-
-    return diagnostic;
-}
-
 export function processLegacyViolations(
     violations: LegacyNuLintViolation[],
     uri: vscode.Uri | null,
@@ -95,22 +53,19 @@ export function processLegacyViolations(
     const diagnosticsByFile = new Map<string, vscode.Diagnostic[]>();
     const violationsByFile = new Map<string, LegacyNuLintViolation[]>();
 
-    for (const violation of violations) {
-        const violationAbsolutePath = resolveViolationPath(violation.file, workspaceRoot);
-
-        if (uri === null || path.resolve(violationAbsolutePath) === path.resolve(uri.fsPath)) {
+    violations
+        .filter(violation => {
+            const violationAbsolutePath = resolveViolationPath(violation.file, workspaceRoot);
+            return uri === null || path.resolve(violationAbsolutePath) === path.resolve(uri.fsPath);
+        })
+        .forEach(violation => {
+            const violationAbsolutePath = resolveViolationPath(violation.file, workspaceRoot);
             const fileUri = vscode.Uri.file(violationAbsolutePath);
-            const diagnostics = diagnosticsByFile.get(violationAbsolutePath) ?? [];
-            const fileViolations = violationsByFile.get(violationAbsolutePath) ?? [];
-
             const diagnostic = createLegacyDiagnostic(violation, fileUri);
 
-            diagnostics.push(diagnostic);
-            fileViolations.push(violation);
-            diagnosticsByFile.set(violationAbsolutePath, diagnostics);
-            violationsByFile.set(violationAbsolutePath, fileViolations);
-        }
-    }
+            diagnosticsByFile.set(violationAbsolutePath, [...(diagnosticsByFile.get(violationAbsolutePath) ?? []), diagnostic]);
+            violationsByFile.set(violationAbsolutePath, [...(violationsByFile.get(violationAbsolutePath) ?? []), violation]);
+        });
 
     return { diagnosticsByFile, violationsByFile };
 }

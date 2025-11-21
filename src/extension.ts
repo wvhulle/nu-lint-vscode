@@ -36,7 +36,12 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const lintFileCommand = vscode.commands.registerCommand('nu-lint.lintFile', () => {
         const activeEditor = vscode.window.activeTextEditor;
-        if (activeEditor !== undefined && (activeEditor.document.languageId === 'nushell' || activeEditor.document.languageId === 'nu')) {
+        if (!activeEditor) {
+            return;
+        }
+        
+        const isNushell = activeEditor.document.languageId === 'nushell' || activeEditor.document.languageId === 'nu';
+        if (isNushell) {
             void linter?.lintDocument(activeEditor.document).catch((error: unknown) => {
                 void vscode.window.showErrorMessage(`Lint failed: ${String(error)}`);
             });
@@ -59,7 +64,5 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
-    if (linter !== undefined) {
-        linter.dispose();
-    }
+    linter?.dispose();
 }

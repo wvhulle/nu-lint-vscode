@@ -15,17 +15,15 @@ export interface NuLintExecutionOptions {
 export function createNuLintCommand(options: NuLintExecutionOptions): { executable: string; args: string[]; cwd: string; targetPath: string } {
     const config = getConfig();
     const workspaceRoot = options.workspaceRoot ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-
     const cwd = workspaceRoot ?? path.dirname(options.filePath);
     const targetPath = workspaceRoot !== undefined ? path.relative(workspaceRoot, options.filePath) : options.filePath;
-
-    const args: string[] = ['-f', options.format];
-
+    
     const configPath = options.configPath ?? config.configPath;
-    if (configPath.length > 0) {
-        args.push('--config', configPath);
-    }
-    args.push(targetPath);
+    const args = [
+        '-f', options.format,
+        ...(configPath.length > 0 ? ['--config', configPath] : []),
+        targetPath
+    ];
 
     return {
         executable: config.executablePath,
@@ -86,8 +84,7 @@ export function detectNuLintFormat(version: string | null): NuLintFormat {
         return 'json';
     }
 
-    const versionParts = version.split('.').map(part => parseInt(part, 10));
-    const [major, minor, patch] = versionParts;
+    const [major, minor, patch] = version.split('.').map(part => parseInt(part, 10));
 
     if (major === undefined || minor === undefined || patch === undefined) {
         return 'json';
@@ -115,14 +112,12 @@ export async function getNuLintVersion(executablePath: string): Promise<string |
                 if (code === 0) {
                     const versionMatch = stdout.match(/nu-lint\s+(\d+\.\d+\.\d+)/);
                     resolve(versionMatch?.[1] ?? null);
-                } else {
-                    reject(new Error(`Version check failed with code ${String(code)}: ${stderr}`));
+                    return;
                 }
+                reject(new Error(`Version check failed with code ${String(code)}: ${stderr}`));
             });
 
-            child.on('error', (error: Error) => {
-                reject(error);
-            });
+            child.on('error', reject);
         });
     } catch {
         return null;

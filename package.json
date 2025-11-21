@@ -81,20 +81,25 @@
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ && tsc -p tests/",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
-    "test-offsets": "node tests/offset-validation.js",
-    "test-workspace": "node tests/workspace-root-test.js"
+    "pretest": "pnpm run compile",
+    "test": "mocha out/tests/**/*.test.js"
   },
   "devDependencies": {
+    "@types/glob": "^9.0.0",
+    "@types/mocha": "^10.0.10",
     "@types/node": "16.x",
     "@types/vscode": "^1.74.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
+    "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.0",
     "eslint": "^8.0.0",
+    "glob": "^13.0.0",
+    "mocha": "^11.7.5",
     "typescript": "^4.9.4"
   },
   "extensionDependencies": [

@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as cp from 'child_process';
 import { getConfig } from './config';
-import { LegacyNuLintViolation, runNuLintLegacyFormat, processLegacyViolations, resolveViolationPath } from './legacy';
+import { LegacyNuLintViolation, runNuLintLegacyFormat, processLegacyViolations } from './legacy';
 import { detectNuLintFormat, getNuLintVersion } from './execution';
 import { VSCodeLintOutput, VSCodeDiagnosticData } from './parsing';
+import { resolveViolationPath, createVSCodeDiagnostic } from './diagnostic-utils';
 
 
 interface CodeActionProvider {
@@ -21,13 +22,6 @@ export class NuLinter implements vscode.Disposable {
     private readonly activeLints: Set<string> = new Set();
     private readonly logger: vscode.LogOutputChannel;
     private nuLintVersion: string | null = null;
-    private static readonly vscodeSevirityMap = new Map<number, vscode.DiagnosticSeverity>([
-        [1, vscode.DiagnosticSeverity.Error],
-        [2, vscode.DiagnosticSeverity.Warning],
-        [3, vscode.DiagnosticSeverity.Information],
-        [4, vscode.DiagnosticSeverity.Information]
-    ]);
-
 
     public constructor(codeActionProvider?: CodeActionProvider, logger?: vscode.LogOutputChannel) {
         this.diagnosticCollection = vscode.languages.createDiagnosticCollection('nu-lint');
@@ -71,30 +65,33 @@ export class NuLinter implements vscode.Disposable {
 
     private setupOnTypeListener(): void {
         this.documentChangeListener = vscode.workspace.onDidChangeTextDocument(event => {
-            if (this.isNushellDocument(event.document)) {
-                this.logger.debug(`Document changed: ${event.document.fileName}`);
-                setTimeout(() => {
-                    void this.lintDocument(event.document);
-                }, 500);
+            if (!this.isNushellDocument(event.document)) {
+                return;
             }
+            this.logger.debug(`Document changed: ${event.document.fileName}`);
+            setTimeout(() => {
+                void this.lintDocument(event.document);
+            }, 500);
         });
     }
 
     private setupOnSaveListener(): void {
         this.documentSaveListener = vscode.workspace.onDidSaveTextDocument(document => {
-            if (this.isNushellDocument(document)) {
-                this.logger.info(`Linting saved Nushell file: ${document.fileName}`);
-                void this.lintDocument(document);
+            if (!this.isNushellDocument(document)) {
+                return;
             }
+            this.logger.info(`Linting saved Nushell file: ${document.fileName}`);
+            void this.lintDocument(document);
         });
     }
 
     private setupOnOpenListener(): void {
         this.documentOpenListener = vscode.workspace.onDidOpenTextDocument(document => {
-            if (this.isNushellDocument(document)) {
-                this.logger.info(`Linting opened Nushell file: ${document.fileName}`);
-                void this.lintDocument(document);
+            if (!this.isNushellDocument(document)) {
+                return;
             }
+            this.logger.info(`Linting opened Nushell file: ${document.fileName}`);
+            void this.lintDocument(document);
         });
     }
 
@@ -159,11 +156,10 @@ export class NuLinter implements vscode.Disposable {
         }
 
         this.logger.info(`Linting ${nuFiles.length} files in workspace`);
+        const format = detectNuLintFormat(this.nuLintVersion);
 
         for (const fileUri of nuFiles) {
             try {
-                const format = detectNuLintFormat(this.nuLintVersion);
-
                 if (format === 'vscode-json') {
                     const document = await vscode.workspace.openTextDocument(fileUri);
                     await this.runNuLintVSCodeFormatDirect(document);
@@ -291,58 +287,19 @@ export class NuLinter implements vscode.Disposable {
         document: vscode.TextDocument,
         workspaceRoot: string | undefined
     ): { diagnostics: vscode.Diagnostic[]; vscodeData: VSCodeDiagnosticData[] } {
-        const diagnostics: vscode.Diagnostic[] = [];
-        const vscodeData: VSCodeDiagnosticData[] = [];
-
-        for (const [file, vscodeDiagnostics] of Object.entries(output.diagnostics)) {
-            const absolutePath = resolveViolationPath(file, workspaceRoot);
-
-            if (path.resolve(absolutePath) !== path.resolve(document.uri.fsPath)) {
-                return { diagnostics: [], vscodeData: [] };
-            }
-
-            for (const vscodeDiagnostic of vscodeDiagnostics) {
-                const diagnostic = this.createVSCodeDiagnostic(vscodeDiagnostic, workspaceRoot);
-
-                diagnostics.push(diagnostic);
-                vscodeData.push(vscodeDiagnostic);
-            }
-        }
-
-        return { diagnostics, vscodeData };
-    }
-
-    private createVSCodeDiagnostic(vscodeDiagnostic: VSCodeDiagnosticData, workspaceRoot: string | undefined): vscode.Diagnostic {
-        const range = new vscode.Range(
-            new vscode.Position(vscodeDiagnostic.range.start.line, vscodeDiagnostic.range.start.character),
-            new vscode.Position(vscodeDiagnostic.range.end.line, vscodeDiagnostic.range.end.character)
-        );
-
-        const diagnostic = new vscode.Diagnostic(
-            range,
-            vscodeDiagnostic.message,
-            NuLinter.vscodeSevirityMap.get(vscodeDiagnostic.severity) ?? vscode.DiagnosticSeverity.Warning
-        );
-
-        diagnostic.source = 'nu-lint';
-        diagnostic.code = vscodeDiagnostic.code;
-
-        if (vscodeDiagnostic.related_information !== undefined) {
-            diagnostic.relatedInformation = vscodeDiagnostic.related_information.map(info =>
-                new vscode.DiagnosticRelatedInformation(
-                    new vscode.Location(
-                        vscode.Uri.file(resolveViolationPath(info.location.uri, workspaceRoot)),
-                        new vscode.Range(
-                            new vscode.Position(info.location.range.start.line, info.location.range.start.character),
-                            new vscode.Position(info.location.range.end.line, info.location.range.end.character)
-                        )
-                    ),
-                    info.message
-                )
+        const results = Object.entries(output.diagnostics)
+            .filter(([file]) => path.resolve(resolveViolationPath(file, workspaceRoot)) === path.resolve(document.uri.fsPath))
+            .flatMap(([, vscodeDiagnostics]) => 
+                vscodeDiagnostics.map(vscodeDiagnostic => ({
+                    diagnostic: createVSCodeDiagnostic(vscodeDiagnostic, workspaceRoot),
+                    data: vscodeDiagnostic
+                }))
             );
-        }
 
-        return diagnostic;
+        return {
+            diagnostics: results.map(r => r.diagnostic),
+            vscodeData: results.map(r => r.data)
+        };
     }
 
 
@@ -364,10 +321,7 @@ export class NuLinter implements vscode.Disposable {
             const fileUri = vscode.Uri.file(file);
             this.diagnosticCollection.set(fileUri, diagnostics);
 
-            if (this.codeActionProvider !== undefined) {
-                const fileViolations = violationsByFile.get(file) ?? [];
-                this.codeActionProvider.updateViolations(fileUri, fileViolations);
-            }
+            this.codeActionProvider?.updateViolations(fileUri, violationsByFile.get(file) ?? []);
         }
     }
 
