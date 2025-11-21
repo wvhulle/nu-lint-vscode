@@ -55,10 +55,10 @@ function applyFix(content: string, replacement: Replacement): string {
            content.substring(replacement.offset_end);
 }
 
-describe('Nu-Lint Offset Validation', () => {
-    const testFilePath = path.resolve(__dirname, '../fixtures/test-script.nu');
+suite('Nu-Lint Offset Validation', () => {
+    const testFilePath = path.resolve(__dirname, '../../fixtures/test-script.nu');
 
-    it('should validate offsets match line/column positions', function() {
+    test('should validate offsets match line/column positions', function() {
         this.timeout(10000);
         
         if (!fs.existsSync(testFilePath)) {

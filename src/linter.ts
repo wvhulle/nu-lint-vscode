@@ -5,7 +5,7 @@ import { getConfig } from './config';
 import { LegacyNuLintViolation, runNuLintLegacyFormat, processLegacyViolations } from './legacy';
 import { detectNuLintFormat, getNuLintVersion } from './execution';
 import { VSCodeLintOutput, VSCodeDiagnosticData } from './parsing';
-import { resolveViolationPath, createVSCodeDiagnostic } from './diagnostic-utils';
+import { resolveViolationPath, createVSCodeDiagnostic } from './diagnostics';
 
 
 interface CodeActionProvider {

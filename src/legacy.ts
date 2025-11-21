@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as cp from 'child_process';
 import { getConfig } from './config';
-import { resolveViolationPath, createLegacyDiagnostic } from './diagnostic-utils';
+import { resolveViolationPath, createLegacyDiagnostic } from './diagnostics';
 
 export interface LegacyNuLintViolation {
     rule_id: string;
