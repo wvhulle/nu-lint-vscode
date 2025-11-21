@@ -10,6 +10,7 @@ export interface NuLintExecutionOptions {
     format: NuLintFormat;
     workspaceRoot?: string;
     configPath?: string;
+    fix?: boolean;
 }
 
 export function createNuLintCommand(options: NuLintExecutionOptions): { executable: string; args: string[]; cwd: string; targetPath: string } {
@@ -22,6 +23,7 @@ export function createNuLintCommand(options: NuLintExecutionOptions): { executab
     const args = [
         '-f', options.format,
         ...(configPath.length > 0 ? ['--config', configPath] : []),
+        ...(options.fix === true ? ['--fix'] : []),
         targetPath
     ];
 
@@ -122,4 +124,107 @@ export async function getNuLintVersion(executablePath: string): Promise<string |
     } catch {
         return null;
     }
+}
+
+export async function execNuLintFix(filePath: string, logger: vscode.LogOutputChannel): Promise<void> {
+    const config = getConfig();
+    const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const cwd = workspaceRoot ?? path.dirname(filePath);
+    const targetPath = workspaceRoot !== undefined ? path.relative(workspaceRoot, filePath) : filePath;
+
+    const args = [
+        '--fix',
+        ...(config.configPath.length > 0 ? ['--config', config.configPath] : []),
+        targetPath
+    ];
+
+    logger.debug(`Running fix: ${config.executablePath} ${args.join(' ')}`);
+    logger.debug(`Working directory: ${cwd}`);
+
+    return new Promise((resolve, reject) => {
+        const child = cp.spawn(config.executablePath, args, { cwd });
+
+        let stdout = '';
+        let stderr = '';
+
+        child.stdout.on('data', (data: Buffer) => {
+            stdout += data.toString();
+        });
+
+        child.stderr.on('data', (data: Buffer) => {
+            stderr += data.toString();
+        });
+
+        child.on('close', (code: number | null) => {
+            logger.debug(`nu-lint --fix exited with code: ${String(code)}`);
+            if (stdout.length > 0) {
+                logger.trace(`stdout: ${stdout}`);
+            }
+            if (stderr.length > 0) {
+                logger.trace(`stderr: ${stderr}`);
+            }
+
+            if (code === 0 || code === 1) {
+                resolve();
+            } else {
+                const error = new Error(`nu-lint --fix failed with code ${String(code)}: ${stderr}`);
+                logger.error(error.message);
+                reject(error);
+            }
+        });
+
+        child.on('error', (error: Error) => {
+            logger.error(`Failed to run nu-lint --fix: ${error.message}`);
+            reject(new Error(`Failed to run nu-lint --fix: ${error.message}`));
+        });
+    });
+}
+
+export async function execNuLintFixStdin(content: string, logger: vscode.LogOutputChannel): Promise<string> {
+    const config = getConfig();
+
+    const args = [
+        '--fix',
+        ...(config.configPath.length > 0 ? ['--config', config.configPath] : [])
+    ];
+
+    logger.debug(`Running fix via stdin: ${config.executablePath} ${args.join(' ')}`);
+
+    return new Promise((resolve, reject) => {
+        const child = cp.spawn(config.executablePath, args);
+
+        let stdout = '';
+        let stderr = '';
+
+        child.stdout.on('data', (data: Buffer) => {
+            stdout += data.toString();
+        });
+
+        child.stderr.on('data', (data: Buffer) => {
+            stderr += data.toString();
+        });
+
+        child.on('close', (code: number | null) => {
+            logger.debug(`nu-lint --fix (stdin) exited with code: ${String(code)}`);
+            if (stderr.length > 0) {
+                logger.trace(`stderr: ${stderr}`);
+            }
+
+            if (code === 0 || code === 1) {
+                resolve(stdout);
+            } else {
+                const error = new Error(`nu-lint --fix (stdin) failed with code ${String(code)}: ${stderr}`);
+                logger.error(error.message);
+                reject(error);
+            }
+        });
+
+        child.on('error', (error: Error) => {
+            logger.error(`Failed to run nu-lint --fix (stdin): ${error.message}`);
+            reject(new Error(`Failed to run nu-lint --fix (stdin): ${error.message}`));
+        });
+
+        child.stdin.write(content);
+        child.stdin.end();
+    });
 }

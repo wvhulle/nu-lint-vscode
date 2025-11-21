@@ -4,7 +4,10 @@
   "parserOptions": {
     "ecmaVersion": 2020,
     "sourceType": "module",
-    "project": "./tsconfig.json"
+    "project": [
+      "./tsconfig.json",
+      "./tests/tsconfig.json"
+    ]
   },
   "plugins": [
     "@typescript-eslint"
@@ -39,49 +42,88 @@
       "error",
       {
         "selector": "default",
-        "format": ["camelCase"]
+        "format": [
+          "camelCase"
+        ]
       },
       {
         "selector": "variable",
-        "format": ["camelCase", "UPPER_CASE"]
+        "format": [
+          "camelCase",
+          "UPPER_CASE"
+        ]
       },
       {
         "selector": "parameter",
-        "format": ["camelCase"],
+        "format": [
+          "camelCase"
+        ],
         "leadingUnderscore": "allow"
       },
       {
         "selector": "typeLike",
-        "format": ["PascalCase"]
+        "format": [
+          "PascalCase"
+        ]
       },
       {
         "selector": "enumMember",
-        "format": ["PascalCase"]
+        "format": [
+          "PascalCase"
+        ]
       },
       {
         "selector": "typeProperty",
-        "format": ["camelCase", "snake_case"]
+        "format": [
+          "camelCase",
+          "snake_case"
+        ]
       }
     ],
     "no-console": "warn",
-    "eqeqeq": ["error", "always"],
-    "curly": ["error", "all"],
+    "eqeqeq": [
+      "error",
+      "always"
+    ],
+    "curly": [
+      "error",
+      "all"
+    ],
     "no-throw-literal": "error",
     "prefer-const": "error",
     "no-var": "error",
     "prefer-arrow-callback": "error",
-    "max-depth": ["error", 3],
-    "max-nested-callbacks": ["error", 3],
-    "complexity": ["error", 10],
-    "max-lines-per-function": ["error", {"max": 50, "skipBlankLines": true, "skipComments": true}],
+    "max-depth": [
+      "error",
+      3
+    ],
+    "max-nested-callbacks": [
+      "error",
+      3
+    ],
+    "complexity": [
+      "error",
+      10
+    ],
+    "max-lines-per-function": [
+      "error",
+      {
+        "max": 50,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
     "no-param-reassign": "error",
     "no-return-assign": "error",
     "no-sequences": "error",
     "no-void": "off",
-    "prefer-destructuring": ["error", {
-      "array": true,
-      "object": true
-    }],
+    "prefer-destructuring": [
+      "error",
+      {
+        "array": true,
+        "object": true
+      }
+    ],
     "no-nested-ternary": "error",
     "no-unneeded-ternary": "error",
     "@typescript-eslint/prefer-readonly": "error",
@@ -91,9 +133,19 @@
     "@typescript-eslint/prefer-includes": "error",
     "@typescript-eslint/prefer-string-starts-ends-with": "error",
     "@typescript-eslint/prefer-for-of": "error",
-    "no-plusplus": ["error", {"allowForLoopAfterthoughts": true}],
+    "no-plusplus": [
+      "error",
+      {
+        "allowForLoopAfterthoughts": true
+      }
+    ],
     "no-continue": "warn",
-    "no-else-return": ["error", {"allowElseIf": false}]
+    "no-else-return": [
+      "error",
+      {
+        "allowElseIf": false
+      }
+    ]
   },
   "ignorePatterns": [
     "out",

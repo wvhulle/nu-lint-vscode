@@ -17,6 +17,7 @@ export class NuLinter implements vscode.Disposable {
     private readonly diagnosticCollection: vscode.DiagnosticCollection;
     private documentChangeListener: vscode.Disposable | undefined;
     private documentSaveListener: vscode.Disposable | undefined;
+    private documentWillSaveListener: vscode.Disposable | undefined;
     private documentOpenListener: vscode.Disposable | undefined;
     private readonly codeActionProvider: CodeActionProvider | undefined;
     private readonly activeLints: Set<string> = new Set();
@@ -76,10 +77,28 @@ export class NuLinter implements vscode.Disposable {
     }
 
     private setupOnSaveListener(): void {
+        const config = getConfig();
+        
+        // Setup fixOnSave using onWillSaveTextDocument to run BEFORE formatters
+        if (config.fixOnSave) {
+            this.logger.info('Setting up fixOnSave listener (runs before formatter)');
+            this.documentWillSaveListener = vscode.workspace.onWillSaveTextDocument(event => {
+                if (!this.isNushellDocument(event.document)) {
+                    return;
+                }
+                
+                this.logger.info(`Applying fixes before save: ${event.document.fileName}`);
+                // waitUntil ensures the fix completes before save/format
+                event.waitUntil(this.fixDocument(event.document));
+            });
+        }
+        
+        // Setup lintOnSave using onDidSaveTextDocument to run AFTER save
         this.documentSaveListener = vscode.workspace.onDidSaveTextDocument(document => {
             if (!this.isNushellDocument(document)) {
                 return;
             }
+            
             this.logger.info(`Linting saved Nushell file: ${document.fileName}`);
             void this.lintDocument(document);
         });
@@ -130,6 +149,46 @@ export class NuLinter implements vscode.Disposable {
             void vscode.window.showErrorMessage(`Nu-Lint error: ${String(error)}`);
         } finally {
             this.activeLints.delete(filePath);
+        }
+    }
+
+    public async fixDocument(document: vscode.TextDocument): Promise<vscode.TextEdit[]> {
+        if (document.uri.scheme !== 'file') {
+            this.logger.debug(`Skipping non-file URI for fix: ${document.uri.toString()}`);
+            return [];
+        }
+
+        this.logger.info(`Applying fixes to buffer for: ${document.uri.fsPath}`);
+
+        const config = getConfig();
+        if (!config.enable) {
+            this.logger.debug('Nu-lint is disabled in configuration');
+            return [];
+        }
+
+        try {
+            const originalContent = document.getText();
+            
+            const { execNuLintFixStdin } = await import('./execution');
+            const fixedContent = await execNuLintFixStdin(originalContent, this.logger);
+            
+            if (fixedContent !== originalContent) {
+                const lastLine = document.lineCount - 1;
+                const lastLineLength = document.lineAt(lastLine).text.length;
+                const fullRange = new vscode.Range(
+                    new vscode.Position(0, 0),
+                    new vscode.Position(lastLine, lastLineLength)
+                );
+                this.logger.info(`Applied fixes to buffer: ${document.uri.fsPath}`);
+                return [vscode.TextEdit.replace(fullRange, fixedContent)];
+            }
+            
+            this.logger.info(`No fixes needed for: ${document.uri.fsPath}`);
+            return [];
+        } catch (error: unknown) {
+            this.logger.error(`Fix error: ${String(error)}`);
+            void vscode.window.showErrorMessage(`Nu-Lint fix error: ${String(error)}`);
+            return [];
         }
     }
 
@@ -331,6 +390,7 @@ export class NuLinter implements vscode.Disposable {
         this.diagnosticCollection.dispose();
         this.documentChangeListener?.dispose();
         this.documentSaveListener?.dispose();
+        this.documentWillSaveListener?.dispose();
         this.documentOpenListener?.dispose();
     }
 }

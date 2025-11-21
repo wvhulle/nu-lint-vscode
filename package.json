@@ -58,6 +58,11 @@
           "type": "boolean",
           "default": false,
           "description": "Run nu-lint as you type (may impact performance)"
+        },
+        "nu-lint.fixOnSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically apply fixes when file is saved"
         }
       }
     },
@@ -70,6 +75,11 @@
       {
         "command": "nu-lint.lintWorkspace",
         "title": "Lint Workspace",
+        "category": "Nu-Lint"
+      },
+      {
+        "command": "nu-lint.fixFile",
+        "title": "Fix Current File",
         "category": "Nu-Lint"
       },
       {
@@ -86,7 +96,9 @@
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
     "pretest": "pnpm run compile",
-    "test": "mocha out/tests/**/*.test.js"
+    "test": "pnpm run test:unit && pnpm run test:integration",
+    "test:unit": "mocha --ui tdd 'out/tests/tests/unit/**/*.test.js'",
+    "test:integration": "node out/tests/tests/runTests.js"
   },
   "devDependencies": {
     "@types/glob": "^9.0.0",

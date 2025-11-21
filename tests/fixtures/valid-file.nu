@@ -1,5 +1,5 @@
 def valid_function [] {
-    echo "This is a valid function"
+  "This is a valid function"
 }
 
 let x = 10

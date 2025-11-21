@@ -1,14 +1,17 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { 
     mapSeverityToVSCode, 
     mapVSCodeSeverityToVSCode,
     createLegacyDiagnostic,
+    createVSCodeDiagnostic,
     resolveViolationPath 
 } from '../../src/diagnostics';
 import { LegacyNuLintViolation } from '../../src/legacy';
+import { runNuLintOnFixture, isNuLintAvailable, getDiagnosticByCode } from '../helpers/nu-lint-runner';
 
-suite('Diagnostics Tests', () => {
+suite('Diagnostics Tests - Severity Mapping', () => {
     test('should map "error" severity to VSCode Error', () => {
         const severity = mapSeverityToVSCode('error');
         assert.strictEqual(severity, vscode.DiagnosticSeverity.Error);
@@ -43,7 +46,9 @@ suite('Diagnostics Tests', () => {
         assert.strictEqual(mapVSCodeSeverityToVSCode(3), vscode.DiagnosticSeverity.Information);
         assert.strictEqual(mapVSCodeSeverityToVSCode(4), vscode.DiagnosticSeverity.Information);
     });
+});
 
+suite('Diagnostics Tests - Legacy Format', () => {
     test('should create legacy diagnostic with correct range', () => {
         const violation: LegacyNuLintViolation = {
             /* eslint-disable-next-line @typescript-eslint/naming-convention */
@@ -106,7 +111,9 @@ suite('Diagnostics Tests', () => {
         assert.strictEqual(diagnostic.relatedInformation.length, 1);
         assert.strictEqual(diagnostic.relatedInformation[0].message, 'Try this instead');
     });
+});
 
+suite('Diagnostics Tests - Path Resolution', () => {
     test('should resolve absolute paths correctly', () => {
         const absolutePath = '/home/user/project/test.nu';
         const resolved = resolveViolationPath(absolutePath);
@@ -118,5 +125,63 @@ suite('Diagnostics Tests', () => {
         const workspaceRoot = '/home/user/project';
         const resolved = resolveViolationPath(relativePath, workspaceRoot);
         assert.ok(resolved.includes('src/test.nu'));
+    });
+});
+
+suite('Diagnostics Tests - Actual Output', () => {
+    const nuLintAvailable = isNuLintAvailable();
+
+    test('should create diagnostics from actual nu-lint output', async function() {
+        if (!nuLintAvailable) {
+            this.skip();
+            return;
+        }
+
+        const result = await runNuLintOnFixture('file-with-issues.nu', { format: 'vscode-json' });
+        assert.ok(result.parsed, 'Should have parsed output');
+
+        const diagnostics = result.parsed.diagnostics['tests/fixtures/file-with-issues.nu'];
+        assert.ok(diagnostics, 'Should have diagnostics for file');
+        assert.ok(diagnostics.length > 0, 'Should have at least one diagnostic');
+
+        const workspaceRoot = path.join(__dirname, '..', 'fixtures');
+        const vscodeDiag = createVSCodeDiagnostic(diagnostics[0], workspaceRoot);
+
+        assert.ok(vscodeDiag.range, 'Diagnostic should have range');
+        assert.strictEqual(vscodeDiag.source, 'nu-lint', 'Source should be nu-lint');
+        assert.ok(vscodeDiag.message.length > 0, 'Should have message');
+    });
+
+    test('should correctly map diagnostic severity', async function() {
+        if (!nuLintAvailable) {
+            this.skip();
+            return;
+        }
+
+        const result = await runNuLintOnFixture('file-with-issues.nu', { format: 'vscode-json' });
+        assert.ok(result.parsed);
+
+        const diagnostics = result.parsed.diagnostics['tests/fixtures/file-with-issues.nu'];
+        assert.ok(diagnostics);
+
+        const workspaceRoot = path.join(__dirname, '..', 'fixtures');
+        const vscodeDiag = createVSCodeDiagnostic(diagnostics[0], workspaceRoot);
+
+        assert.ok(vscodeDiag.severity === vscode.DiagnosticSeverity.Warning || vscodeDiag.severity === vscode.DiagnosticSeverity.Error);
+    });
+
+    test('should handle related information from actual output', async function() {
+        if (!nuLintAvailable) {
+            this.skip();
+            return;
+        }
+
+        const result = await runNuLintOnFixture('file-with-issues.nu', { format: 'vscode-json' });
+        assert.ok(result.parsed);
+
+        const diagnostic = getDiagnosticByCode(result.parsed, 'tests/fixtures/file-with-issues.nu', 'kebab_case_commands');
+        assert.ok(diagnostic, 'Should find kebab_case_commands diagnostic');
+        assert.ok(diagnostic.related_information, 'Should have related information');
+        assert.ok(diagnostic.related_information.length > 0, 'Related information should not be empty');
     });
 });

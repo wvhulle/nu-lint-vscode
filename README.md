@@ -25,20 +25,14 @@ Extension Settings:
 - `nu-lint.lintOnSave`: Run nu-lint when file is saved (default: true)
 - `nu-lint.lintOnOpen`: Run nu-lint when file is opened (default: true)
 - `nu-lint.lintOnType`: Run nu-lint as you type (default: false)
-
-Create a `.nu-lint.toml` file in your project root to configure linting rules:
-
-```toml
-min_severity = "warning"
-
-[rules]
-prefer_pipeline_input = "error"
-```
+- `nu-lint.fixOnSave`: Automatically apply fixes when file is saved (default: false)
 
 ## Commands
 
 - `Nu-Lint: Lint Current File` - Lint the currently active Nushell file
 - `Nu-Lint: Lint Workspace` - Lint all Nushell files in the workspace
+- `Nu-Lint: Fix Current File` - Apply all available fixes to the currently active Nushell file
+- `Nu-Lint: Show Logs` - Show the extension output logs for debugging
 
 ## License
 

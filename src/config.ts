@@ -7,6 +7,7 @@ export interface NuLintConfig {
     lintOnSave: boolean;
     lintOnOpen: boolean;
     lintOnType: boolean;
+    fixOnSave: boolean;
 }
 
 export function getConfig(): NuLintConfig {
@@ -17,6 +18,7 @@ export function getConfig(): NuLintConfig {
         configPath: config.get('configPath', ''),
         lintOnSave: config.get('lintOnSave', true),
         lintOnOpen: config.get('lintOnOpen', true),
-        lintOnType: config.get('lintOnType', false)
+        lintOnType: config.get('lintOnType', false),
+        fixOnSave: config.get('fixOnSave', false)
     };
 }
