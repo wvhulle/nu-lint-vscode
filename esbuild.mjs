@@ -9,6 +9,7 @@ const config = {
     external: ['vscode'],
     format: 'cjs',
     platform: 'node',
+    minify: true,
 };
 
 if (watch) {
