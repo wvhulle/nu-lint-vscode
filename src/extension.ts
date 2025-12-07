@@ -3,19 +3,23 @@ import {
     LanguageClient,
     LanguageClientOptions,
     ServerOptions,
-    TransportKind
 } from 'vscode-languageclient/node';
 
 let client: LanguageClient | undefined;
+let outputChannel: vscode.OutputChannel | undefined;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
+    outputChannel = vscode.window.createOutputChannel('Nu-Lint');
+    context.subscriptions.push(outputChannel);
+
     const config = vscode.workspace.getConfiguration('nu-lint');
     const executablePath = config.get<string>('executablePath', 'nu-lint');
+
+    outputChannel.appendLine(`Starting nu-lint LSP from: ${executablePath}`);
 
     const serverOptions: ServerOptions = {
         command: executablePath,
         args: ['--lsp'],
-        transport: TransportKind.stdio
     };
 
     const clientOptions: LanguageClientOptions = {
@@ -23,9 +27,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
             { language: 'nushell', scheme: 'file' },
             { language: 'nu', scheme: 'file' }
         ],
-        synchronize: {
-            fileEvents: vscode.workspace.createFileSystemWatcher('**/*.nu')
-        }
+        outputChannel,
     };
 
     client = new LanguageClient(
@@ -38,14 +40,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     try {
         await client.start();
         context.subscriptions.push(client);
+        outputChannel.appendLine('Nu-Lint LSP started successfully');
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
+        outputChannel.appendLine(`Failed to start: ${message}`);
         void vscode.window.showErrorMessage(
             `Nu-Lint LSP failed to start: ${message}. Make sure nu-lint >= 0.0.62 is installed.`
         );
     }
 }
 
-export function deactivate(): Promise<void> | undefined {
-    return client?.stop();
+export async function deactivate(): Promise<void> {
+    if (client) {
+        await client.stop();
+    }
 }

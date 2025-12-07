@@ -5,7 +5,10 @@
       "label": "pnpm: build",
       "type": "shell",
       "command": "pnpm",
-      "args": ["run", "build"],
+      "args": [
+        "run",
+        "build"
+      ],
       "group": "build",
       "presentation": {
         "panel": "dedicated",
@@ -17,7 +20,10 @@
       "label": "pnpm: watch",
       "type": "shell",
       "command": "pnpm",
-      "args": ["run", "watch"],
+      "args": [
+        "run",
+        "watch"
+      ],
       "isBackground": true,
       "group": {
         "kind": "build",
