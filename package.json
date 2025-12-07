@@ -2,7 +2,7 @@
   "name": "nu-lint",
   "displayName": "Nu-Lint",
   "description": "Linter for NuShell",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "publisher": "WillemVanhulle",
   "engines": {
     "vscode": "^1.74.0"
@@ -36,9 +36,9 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "pnpm run compile",
-    "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "vscode:prepublish": "pnpm run build",
+    "build": "node esbuild.mjs",
+    "watch": "node esbuild.mjs --watch"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"
@@ -47,6 +47,7 @@
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.74.0",
     "@vscode/vsce": "^3.7.0",
+    "esbuild": "^0.24.0",
     "typescript": "^5.0.0"
   },
   "extensionDependencies": [
