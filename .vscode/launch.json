@@ -12,7 +12,7 @@
       "outFiles": [
         "${workspaceFolder}/out/**/*.js"
       ],
-      "preLaunchTask": "pnpm: compile"
+      "preLaunchTask": "pnpm: build"
     }
   ]
 }

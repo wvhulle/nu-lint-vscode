@@ -8,7 +8,7 @@ import {
 
 let client: LanguageClient | undefined;
 
-export function activate(context: vscode.ExtensionContext): void {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
     const config = vscode.workspace.getConfiguration('nu-lint');
     const executablePath = config.get<string>('executablePath', 'nu-lint');
 
@@ -35,8 +35,15 @@ export function activate(context: vscode.ExtensionContext): void {
         clientOptions
     );
 
-    client.start();
-    context.subscriptions.push(client);
+    try {
+        await client.start();
+        context.subscriptions.push(client);
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        void vscode.window.showErrorMessage(
+            `Nu-Lint LSP failed to start: ${message}. Make sure nu-lint >= 0.0.62 is installed.`
+        );
+    }
 }
 
 export function deactivate(): Promise<void> | undefined {

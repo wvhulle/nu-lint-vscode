@@ -2,30 +2,22 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "pnpm: compile",
+      "label": "pnpm: build",
       "type": "shell",
       "command": "pnpm",
-      "args": [
-        "run",
-        "compile"
-      ],
+      "args": ["run", "build"],
       "group": "build",
       "presentation": {
         "panel": "dedicated",
         "reveal": "never"
       },
-      "problemMatcher": [
-        "$tsc"
-      ]
+      "problemMatcher": []
     },
     {
       "label": "pnpm: watch",
       "type": "shell",
       "command": "pnpm",
-      "args": [
-        "run",
-        "watch"
-      ],
+      "args": ["run", "watch"],
       "isBackground": true,
       "group": {
         "kind": "build",
@@ -35,9 +27,16 @@
         "panel": "dedicated",
         "reveal": "never"
       },
-      "problemMatcher": [
-        "$tsc-watch"
-      ]
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^✘.+$"
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^\\[watch\\]",
+          "endsPattern": "^⚡"
+        }
+      }
     }
   ]
 }
