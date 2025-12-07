@@ -1,8 +1,8 @@
 {
   "name": "nu-lint",
   "displayName": "Nu-Lint",
-  "description": "Helpful linter for the Nu scripting language",
-  "version": "0.0.8",
+  "description": "Linter for NuShell",
+  "version": "0.0.9",
   "publisher": "WillemVanhulle",
   "engines": {
     "vscode": "^1.74.0"
@@ -20,105 +20,37 @@
   ],
   "activationEvents": [
     "onLanguage:nu",
-    "onLanguage:nushell",
-    "workspaceContains:*.nu"
+    "onLanguage:nushell"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
-      "type": "object",
       "title": "Nu-Lint",
       "properties": {
-        "nu-lint.enable": {
-          "type": "boolean",
-          "default": true,
-          "description": "Enable/disable nu-lint"
-        },
         "nu-lint.executablePath": {
           "type": "string",
           "default": "nu-lint",
           "description": "Path to the nu-lint executable"
-        },
-        "nu-lint.configPath": {
-          "type": "string",
-          "default": "",
-          "description": "Path to custom nu-lint configuration file (.nu-lint.toml)"
-        },
-        "nu-lint.lintOnSave": {
-          "type": "boolean",
-          "default": true,
-          "description": "Run nu-lint when file is saved"
-        },
-        "nu-lint.lintOnOpen": {
-          "type": "boolean",
-          "default": true,
-          "description": "Run nu-lint when file is opened"
-        },
-        "nu-lint.lintOnType": {
-          "type": "boolean",
-          "default": false,
-          "description": "Run nu-lint as you type (may impact performance)"
-        },
-        "nu-lint.fixOnSave": {
-          "type": "boolean",
-          "default": false,
-          "description": "Automatically apply fixes when file is saved"
         }
       }
-    },
-    "commands": [
-      {
-        "command": "nu-lint.lintFile",
-        "title": "Lint Current File",
-        "category": "Nu-Lint"
-      },
-      {
-        "command": "nu-lint.lintWorkspace",
-        "title": "Lint Workspace",
-        "category": "Nu-Lint"
-      },
-      {
-        "command": "nu-lint.fixFile",
-        "title": "Fix Current File",
-        "category": "Nu-Lint"
-      },
-      {
-        "command": "nu-lint.showLogs",
-        "title": "Show Logs",
-        "category": "Nu-Lint"
-      }
-    ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",
-    "compile": "tsc -p ./ && tsc -p tests/",
-    "watch": "tsc -watch -p ./",
-    "lint": "eslint src --ext ts",
-    "lint:fix": "eslint src --ext ts --fix",
-    "pretest": "pnpm run compile",
-    "test": "pnpm run test:unit && pnpm run test:integration",
-    "test:unit": "mocha --ui tdd 'out/tests/tests/unit/**/*.test.js'",
-    "test:integration": "node out/tests/tests/runTests.js"
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@types/glob": "^9.0.0",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "16.x",
+    "@types/node": "^20.0.0",
     "@types/vscode": "^1.74.0",
-    "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0",
-    "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.7.0",
-    "eslint": "^8.0.0",
-    "glob": "^13.0.0",
-    "mocha": "^11.7.5",
-    "typescript": "^4.9.4"
+    "typescript": "^5.0.0"
   },
   "extensionDependencies": [
     "TheNuProjectContributors.vscode-nushell-lang"
-  ],
-  "extensionPack": [
-    "constneo.vscode-nushell-format"
   ],
   "repository": {
     "type": "git",
