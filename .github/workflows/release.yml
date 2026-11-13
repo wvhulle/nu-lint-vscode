@@ -28,6 +28,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: marketplaces
+    permissions:
+      contents: write
+      id-token: write
     steps:
       - uses: actions/checkout@v7
         with:
@@ -49,12 +52,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "${{ needs.release-please.outputs.tag_name }}" "$VSIX_PATH" --clobber
       - name: Install the locked publishing tools
+        id: publishing-tools
         run: nix develop --command pnpm install --frozen-lockfile
-      - name: Publish to the Visual Studio Marketplace
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-        run: nix develop --command pnpm exec vsce publish --packagePath "$VSIX_PATH"
+      - name: Publish to the Visual Studio Marketplace with Trusted Publishing
+        if: ${{ !cancelled() && steps.publishing-tools.outcome == 'success' }}
+        run: nix develop --command pnpm exec vsce publish --oidc --skip-duplicate --packagePath "$VSIX_PATH"
       - name: Publish to Open VSX
+        if: ${{ !cancelled() && steps.publishing-tools.outcome == 'success' }}
         env:
           OVSX_PAT: ${{ secrets.OVSX_PAT }}
-        run: nix develop --command pnpm exec ovsx publish "$VSIX_PATH"
+        run: nix develop --command pnpm exec ovsx publish --skip-duplicate "$VSIX_PATH"
