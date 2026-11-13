@@ -4,8 +4,9 @@
   "description": "Linter for NuShell",
   "version": "0.0.13",
   "publisher": "WillemVanhulle",
+  "packageManager": "pnpm@10.34.7",
   "engines": {
-    "vscode": "^1.74.0"
+    "vscode": "^1.100.0"
   },
   "categories": [
     "Linters",
@@ -24,13 +25,64 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "commands": [
+      {
+        "command": "nu-lint.restartServer",
+        "title": "Restart Language Server",
+        "category": "Nu-Lint"
+      },
+      {
+        "command": "nu-lint.fixAll",
+        "title": "Fix All Auto-Fixable Problems",
+        "category": "Nu-Lint",
+        "enablement": "editorLangId == nushell || editorLangId == nu"
+      },
+      {
+        "command": "nu-lint.openUserConfig",
+        "title": "Open User Configuration",
+        "category": "Nu-Lint"
+      },
+      {
+        "command": "nu-lint.showOutput",
+        "title": "Show Logs",
+        "category": "Nu-Lint"
+      }
+    ],
     "configuration": {
       "title": "Nu-Lint",
       "properties": {
         "nu-lint.executablePath": {
           "type": "string",
           "default": "nu-lint",
-          "description": "Path to the nu-lint executable"
+          "description": "Path to the nu-lint executable (version 1.7.0 or newer)"
+        },
+        "nu-lint.server.logLevel": {
+          "type": "string",
+          "enum": [
+            "off",
+            "error",
+            "warn",
+            "info",
+            "debug",
+            "trace"
+          ],
+          "default": "warn",
+          "markdownDescription": "Messages from the nu-lint language server at this level and above appear in the **Nu-Lint** output channel (passed as `--log-level`, needs nu-lint 1.10.0 or newer)."
+        },
+        "nu-lint.server.logFile": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Also append language server logs to this file (passed as `--log-file`, needs nu-lint 1.10.0 or newer). Leave empty to log only to the output channel."
+        },
+        "nu-lint.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Trace the communication between VS Code and the nu-lint language server"
         }
       }
     }
@@ -38,17 +90,28 @@
   "scripts": {
     "vscode:prepublish": "pnpm run build",
     "build": "node esbuild.mjs",
-    "watch": "node esbuild.mjs --watch"
+    "icon": "resvg --width 256 --height 256 \"$NU_LINT_LOGO_SVG\" icon.png",
+    "build:e2e": "node esbuild.mjs --e2e",
+    "watch": "node esbuild.mjs --watch",
+    "typecheck": "tsc --noEmit -p . && tsc --noEmit -p test",
+    "lint": "eslint .",
+    "test:unit": "node --test \"test/unit/**/*.test.ts\""
   },
   "dependencies": {
-    "vscode-languageclient": "^9.0.1"
+    "vscode-languageclient": "^11.0.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/vscode": "^1.74.0",
-    "@vscode/vsce": "^3.7.0",
-    "esbuild": "^0.24.0",
-    "typescript": "^5.0.0"
+    "@types/mocha": "^10.0.10",
+    "@vscode/vsce": "^4.1.1",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "~1.100.0",
+    "esbuild": "^0.28.2",
+    "@eslint/js": "^10.0.0",
+    "eslint": "^10.14.0",
+    "mocha": "^12.0.3",
+    "ovsx": "^1.4.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2"
   },
   "extensionDependencies": [
     "TheNuProjectContributors.vscode-nushell-lang"

@@ -9,10 +9,24 @@
         "--extensionDevelopmentPath=${workspaceFolder}",
         "--disable-extension=willemvanhulle.nu-lint"
       ],
-      "outFiles": [
-        "${workspaceFolder}/out/**/*.js"
-      ],
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
       "preLaunchTask": "pnpm: build"
+    },
+    {
+      "name": "Run End-to-End Suites",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceFolder}",
+        "--extensionTestsPath=${workspaceFolder}/out/test/run_extension_suites.js",
+        "--disable-extension=willemvanhulle.nu-lint",
+        "${workspaceFolder}/test/e2e/language_server/fixture_workspace"
+      ],
+      "env": {
+        "XDG_CONFIG_HOME": "${workspaceFolder}/.vscode-test/config"
+      },
+      "outFiles": ["${workspaceFolder}/out/**/*.js"],
+      "preLaunchTask": "pnpm: build e2e"
     }
   ]
 }

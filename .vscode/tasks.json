@@ -17,6 +17,24 @@
       "problemMatcher": []
     },
     {
+      "label": "pnpm: build e2e",
+      "dependsOn": [
+        "pnpm: build"
+      ],
+      "type": "shell",
+      "command": "pnpm",
+      "args": [
+        "run",
+        "build:e2e"
+      ],
+      "group": "build",
+      "presentation": {
+        "panel": "dedicated",
+        "reveal": "never"
+      },
+      "problemMatcher": []
+    },
+    {
       "label": "pnpm: watch",
       "type": "shell",
       "command": "pnpm",
@@ -35,12 +53,12 @@
       },
       "problemMatcher": {
         "pattern": {
-          "regexp": "^✘.+$"
+          "regexp": "^\u2718.+$"
         },
         "background": {
           "activeOnStart": true,
           "beginsPattern": "^\\[watch\\]",
-          "endsPattern": "^⚡"
+          "endsPattern": "^\u26a1"
         }
       }
     }

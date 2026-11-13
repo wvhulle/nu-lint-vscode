@@ -4,6 +4,8 @@ node_modules
 *.vsix
 .DS_Store
 result
+result-*
+icon.png
 
 # Prevent accidental JS compilation in src
 src/**/*.js
