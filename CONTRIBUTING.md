@@ -13,7 +13,7 @@ pnpm run test:unit
 
 See [docs/architecture.md](docs/architecture.md) for how the extension, the language server, the tests and the release pipeline fit together.
 
-The extension icon is rendered from nu-lint's [`assets/logo.svg`](https://codeberg.org/wvhulle/nu-lint/src/branch/main/assets/logo.svg) (the `nu-lint` flake input). `nix build` does this automatically; for a local `vsce package`, run `pnpm run icon` inside the dev shell first. The README shows the committed `docs/logo.png`, because the Marketplace rejects SVG images from Codeberg. The `readme-logo-matches-nu-lint` check fails when it drifts from the SVG; regenerate it with `pnpm run logo`.
+The extension icon is rendered from nu-lint's [`assets/logo.svg`](https://codeberg.org/wvhulle/nu-lint/src/branch/main/assets/logo.svg) (the `nu-lint` flake input). `nix build` does this automatically; for a local `vsce package`, run `pnpm run icon` inside the dev shell first. The README shows the committed `docs/logo.png`, because the Marketplace rejects SVG images from Codeberg. The `logos-match-nu-lint` check fails when the README logo or the packaged icon drifts from the SVG; regenerate the README logo with `pnpm run logo`.
 
 Press F5 in VS Code to start an extension development host with the extension loaded. The "Run End-to-End Suites" launch configuration runs the extension-host suites against your local nu-lint with an isolated `XDG_CONFIG_HOME`.
 

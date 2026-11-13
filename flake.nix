@@ -82,11 +82,22 @@
         {
           static-analysis = extensionBuilds.staticAnalysis;
           vsix = extensionBuilds.extensionBuild;
-          readme-logo-matches-nu-lint =
-            pkgs.runCommand "readme-logo-matches-nu-lint" { nativeBuildInputs = [ pkgs.resvg ]; }
+          logos-match-nu-lint =
+            pkgs.runCommand "logos-match-nu-lint"
+              {
+                nativeBuildInputs = [
+                  pkgs.resvg
+                  pkgs.unzip
+                ];
+              }
               ''
-                resvg --width 256 --height 256 ${logoSvg} rendered-logo.png
-                if ! cmp -s rendered-logo.png ${./docs/logo.png}; then
+                resvg --width 256 --height 256 ${logoSvg} input-logo.png
+                unzip -p ${extensionBuilds.extensionBuild}/*.vsix extension/icon.png > packaged-icon.png
+                if ! cmp -s input-logo.png packaged-icon.png; then
+                  echo "the .vsix icon is not rendered from nu-lint's assets/logo.svg" >&2
+                  exit 1
+                fi
+                if ! cmp -s input-logo.png ${./docs/logo.png}; then
                   echo "docs/logo.png differs from nu-lint's assets/logo.svg; regenerate it with 'pnpm run logo' in the dev shell" >&2
                   exit 1
                 fi

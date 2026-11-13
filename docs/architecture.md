@@ -133,7 +133,7 @@ flowchart LR
     unpacked["unpacked: extension directory"]
     e2eBundle["e2e: mocha suites and fixtures"]
     staticAnalysis["static-analysis<br/>tsc, eslint, node --test"]
-    logoCheck["readme-logo-matches-nu-lint"]
+    logoCheck["logos-match-nu-lint"]
     vmTest["NixOS VM test<br/>VSCodium, nushell extension, nu-lint"]
 
     nixpkgs --> pnpmDeps --> extensionBuild
@@ -143,6 +143,7 @@ flowchart LR
     extensionBuild --> e2eBundle
     pnpmDeps --> staticAnalysis
     nuLintInput --> logoCheck
+    vsix --> logoCheck
     unpacked --> vmTest
     e2eBundle --> vmTest
     nuLintInput --> vmTest
