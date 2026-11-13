@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/logo.png" width="96" alt="nu-lint logo"></p>
+
 # Nu-Lint
 
 Linter for [Nu](https://www.nushell.sh/) shell scripts, provided through the language server of [nu-lint](https://codeberg.org/wvhulle/nu-lint).
@@ -42,6 +44,12 @@ The user configuration lives in the configuration directory of your platform:
 - `nu-lint.trace.server`: trace the JSON-RPC messages between VS Code and the language server (`off`, `messages`, `verbose`)
 
 **Nu-Lint: Show Logs** opens the output channel. Changing the executable path or a log setting restarts the language server.
+
+## Troubleshooting
+
+- **"nu-lint unavailable"** in the status bar: the extension could not run `nu-lint`. Install it or point `nu-lint.executablePath` at the binary.
+- **A warning asking you to upgrade**: your nu-lint is older than this extension expects. It still works, but some features or settings are unavailable until you upgrade.
+- **Something else looks wrong**: set `nu-lint.server.logLevel` to `debug`, reproduce the problem, and run **Nu-Lint: Show Logs**. Include that output when you [report an issue](https://codeberg.org/wvhulle/nu-lint/issues).
 
 ## Alternative without this extension
 

@@ -91,6 +91,7 @@
     "vscode:prepublish": "pnpm run build",
     "build": "node esbuild.mjs",
     "icon": "resvg --width 256 --height 256 \"$NU_LINT_LOGO_SVG\" icon.png",
+    "logo": "resvg --width 256 --height 256 \"$NU_LINT_LOGO_SVG\" docs/logo.png",
     "build:e2e": "node esbuild.mjs --e2e",
     "watch": "node esbuild.mjs --watch",
     "typecheck": "tsc --noEmit -p . && tsc --noEmit -p test",

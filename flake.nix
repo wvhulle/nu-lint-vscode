@@ -76,11 +76,22 @@
           pkgs,
           extensionBuilds,
           nuLintPackage,
+          logoSvg,
           ...
         }:
         {
           static-analysis = extensionBuilds.staticAnalysis;
           vsix = extensionBuilds.extensionBuild;
+          readme-logo-matches-nu-lint =
+            pkgs.runCommand "readme-logo-matches-nu-lint" { nativeBuildInputs = [ pkgs.resvg ]; }
+              ''
+                resvg --width 256 --height 256 ${logoSvg} rendered-logo.png
+                if ! cmp -s rendered-logo.png ${./docs/logo.png}; then
+                  echo "docs/logo.png differs from nu-lint's assets/logo.svg; regenerate it with 'pnpm run logo' in the dev shell" >&2
+                  exit 1
+                fi
+                touch $out
+              '';
         }
         // lib.optionalAttrs (system == "x86_64-linux") (
           import ./test/e2e {

@@ -74,11 +74,11 @@
         "rust-overlay": "rust-overlay"
       },
       "locked": {
-        "lastModified": 1794564597,
-        "narHash": "sha256-Bf/LndKMyu6V9vR6rVAWrS8F7ie+8q+Rk3f46YvRQhI=",
+        "lastModified": 1794566352,
+        "narHash": "sha256-uOUSjq2+Pv68ysVxqb4ehqLhs22m/Edb9+KUneo6ALI=",
         "ref": "refs/heads/main",
-        "rev": "96dbd2c234d3620abb478873dacb47785dd1b2d6",
-        "revCount": 564,
+        "rev": "726c54d7f4eb4ca9b55e3e34500e14101cfc87c7",
+        "revCount": 565,
         "type": "git",
         "url": "https://codeberg.org/wvhulle/nu-lint"
       },
