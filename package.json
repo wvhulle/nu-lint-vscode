@@ -2,7 +2,7 @@
   "name": "nu-lint",
   "displayName": "Nu-Lint",
   "description": "Linter for NuShell",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "publisher": "WillemVanhulle",
   "packageManager": "pnpm@10.34.7",
   "engines": {
